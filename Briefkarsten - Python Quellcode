@@ -1,24 +1,26 @@
 import serial
 import time
 import tkinter as tk
+import socket
 
-ser = serial.Serial('COM4', 9600)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+s.connect(('192.168.43.188',30303))
+#ser = serial.Serial('COM4', 9600)
 
 def oeffnen():
-    ser.write(b'1')
+    s.send('off'.encode('utf-8')+b'\n')
     
 def zu():
-    ser.write(b'0')
+    s.send('on'.encode('utf-8')+b'\n')
 
 def gucken():
-    x = ser.readline()
-    y = x.decode('utf-8')
+    x = s.recv(1024)
+    y = x.decode()
     label1.configure(text=(y))
     fenster.after(2000, gucken)
     if y == 'Briefkarsten wird geschlossen':
         zu()
-
-
 
 fenster = tk.Tk()
 fenster.title('Briefkarsten') 
@@ -28,6 +30,7 @@ button1 = tk.Button(fenster, text="Öffnen", command = oeffnen)
 button1.pack()
 
 
+
 label1 = tk.Label(fenster, text='')
 label1.pack()
 
@@ -35,4 +38,3 @@ gucken()
 
 
 tk.mainloop()
-
