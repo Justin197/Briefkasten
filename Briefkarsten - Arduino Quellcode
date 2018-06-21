@@ -1,98 +1,116 @@
-int flash = 12;
-
-int analogPin = 0;
-
-int ldrWert = 0;
-
-int schalter = 7;
-
-int buttonState = LOW;
-
-int x = 0;
-
-int led = 13;
-int led1= 10;
-int led2=11;
-
+#include <SoftwareSerial.h> 
+#include "DumbServer.h"
 #include <Stepper.h>
-int steps = 2028;
-Stepper stepper(steps, 2, 4, 3, 5);
+/*verschiedene Bibliotheken werden ind das Programm integriert. 
+Nr. 1 und 2 für die Verbindung zum Server und Nr. 3 für den Steppermotor*/
 
-void setup() {
+
+SoftwareSerial esp_serial(11, 12); //über Pin 11 und 12 wird das W-lan Modul angesteuert
+EspServer esp_server;
+
+int flash = 6;
+int analogPin = 0;
+int ldrWert = 0;
+int schalter = 9;
+int buttonState = LOW;
+int x = 0;
+int ledrot = 7;
+int ledgruen = 8;
+int steps = 2028;
+/*zuordnung sämtlicher Variablen*/
+
+Stepper stepper(steps, 2, 4, 3, 5);
+/*zuordnung der Pins für den Steppermotor*/
+
+void setup()
+{
+  Serial.begin(19200);
+  esp_serial.begin(19200);
+  Serial.println("Starting server...");
+  esp_server.begin(&esp_serial, "arduino", "password", 30303);
+  Serial.println("...server is running");
+  /*Verbindung zum Server wird aufgbaut*/
+
+  char ip[16];
+  esp_server.my_ip(ip, 16);
+  /*Die IP-Adresse wird erfasst*/
+
+  Serial.print("My ip: ");
+  Serial.println(ip);
+
+  
   stepper.setSpeed(10);
 
-  Serial.begin(9600);
-
   pinMode(flash, OUTPUT);
- 
-  pinMode(led, OUTPUT);
-  pinMode(led1, OUTPUT);
-  pinMode(led2, OUTPUT);
-
+  pinMode(ledrot, OUTPUT);
+  pinMode(ledgruen, OUTPUT);
   pinMode(schalter, INPUT);
-
 
 }
 
 void loop() {
-
+  digitalWrite(ledgruen, HIGH);
   digitalWrite(flash, HIGH);
 
   ldrWert = analogRead(analogPin);
+  
 
-  if (ldrWert < 550) {
+  if (ldrWert < 500) {
 
-    Serial.println("Post ist da!");
-
-    delay(2000);
-
-  }
-
-  if (ldrWert > 550) {
-
-    Serial.println("Leerer Karsten"); //leer
+    esp_server.println("Post ist da!");
 
     delay(2000);
 
   }
 
-  if (Serial.available() > 0) {
+  if (ldrWert > 500) {
 
-    x = Serial.read();
+    esp_server.println("Leerer Karsten"); 
+    Serial.println(ldrWert);
 
-    if (x == '1') {
+    delay(2000);
 
-      digitalWrite(led, HIGH);
-      stepper.step(200);
-      delay(2000);
+  }
 
+
+  String x = esp_server.readStringUntil('\n');
+
+
+  if (x == "off") {
+
+    digitalWrite(ledrot, HIGH);
+    digitalWrite(ledgruen, LOW);
+    stepper.step(-500);
+    delay(2000);
+
+    buttonState = digitalRead(schalter);
+
+    while (buttonState == LOW) {
       buttonState = digitalRead(schalter);
-
-      while (buttonState == LOW) {
-        buttonState = digitalRead(schalter);
-        delay(1000);
-      }
-      
-
-      digitalWrite(led, LOW);
-      stepper.step(-200);
-
-      Serial.println("Briefkarsten wird geschlossen");
       delay(1000);
-      }
-    
-
-    else if (x == '0') {
-
-      digitalWrite(led, LOW);
-      
-
     }
-    else {
 
-      Serial.println("invalid!");
 
-    }
+
+    stepper.step(+500);
+
+    digitalWrite(ledrot, LOW);
+    digitalWrite(ledgruen, HIGH);
+
+    esp_server.println("Briefkarsten wird geschlossen");
+    delay(1000);
+  }
+
+
+  else if (x == "on") {
+
+    digitalWrite(ledrot, LOW);
+
+
+  }
+  else {
+
+    Serial.println("invalid!");
 
   }
 
