@@ -2,17 +2,21 @@ import serial
 import time
 import tkinter as tk
 import socket
+#Eibindung der Bibliotheken für die Darstellung des Guis und für die Verbindung mit dem Server
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-s.connect(('192.168.43.188',30303))
-#ser = serial.Serial('COM4', 9600)
+s.connect(('192.168.1.164',30303))
+#ip Adresse des Arduinos und Host, damit das Programm mit dem Arduino über das Netzwerk komunizieren kann.
 
 def oeffnen():
     s.send('off'.encode('utf-8')+b'\n')
+
+#Funktion zum öffnen des Briefkastens
     
 def zu():
     s.send('on'.encode('utf-8')+b'\n')
+#Funktion zum schließen des Briefkastens
 
 def gucken():
     x = s.recv(1024)
@@ -21,6 +25,10 @@ def gucken():
     fenster.after(2000, gucken)
     if y == 'Briefkarsten wird geschlossen':
         zu()
+#Diese Funktion überprüft ob der Arduino Post im Briefkasten bemerkt hat.
+#y ist der Text welcher vom Arduino gesendet wird. Dieser wird im Gui angezeigt.
+#mit fenster.after(2000, gucken) wird diese Funktion alle 2 Sekunden ausgeführt.
+#wenn der Arduino sendet, dass der Kasten geschlossen wird, wird die Funktion zu aufgerufen.
 
 fenster = tk.Tk()
 fenster.title('Briefkarsten') 
@@ -29,12 +37,20 @@ fenster.geometry('200x100')
 button1 = tk.Button(fenster, text="Öffnen", command = oeffnen)
 button1.pack()
 
+#Es wird ein Fenster mit 200 x 100 Pixel erstellt. in ihm gibt es einen Button auf dem Öffnen steht.
+#Wird dieser betätigt, wird die Funktion oeffnen aufgerufen.
+#Das Fenster wird betitelt mit Briefkarsten.
+
 
 
 label1 = tk.Label(fenster, text='')
 label1.pack()
 
+#In das Fenster wird ein Label eingefügt, welches den Text anzeigt, den der Arduino gesendet hat.
+
 gucken()
 
 
 tk.mainloop()
+
+#Das Programm wird gestartet
